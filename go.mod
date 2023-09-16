@@ -1,6 +1,6 @@
 module storj.io/access
 
-go 1.21.1
+go 1.21
 
 require (
 	github.com/GoogleCloudPlatform/functions-framework-go v1.7.4

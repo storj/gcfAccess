@@ -1,4 +1,7 @@
-package cloudsigning
+// Copyright (C) 2023 Storj Labs, Inc.
+// See LICENSE for copying information.
+
+package gcfaccess
 
 import (
 	"crypto/rand"
@@ -15,7 +18,7 @@ func NewS3Customer(w http.ResponseWriter, r *http.Request) {
 	}
 	var request struct {
 		AccessGrant string             `json:"access_grant"`
-		Path        uplink.SharePrefix `json:"paths"`
+		Path        uplink.SharePrefix `json:"path"`
 		Permission  uplink.Permission  `json:"permission"`
 		Passphrase  string             `json:"passphrase"`
 		SaltBytes   []byte             `json:"salt"`
