@@ -65,6 +65,11 @@ func NewS3Customer(w http.ResponseWriter, r *http.Request) {
 		r.Response.StatusCode = http.StatusInternalServerError
 		r.Response.Status = "Error while deriving restricted access grant"
 	}
+	serializedAccess, err := derivedAccess.Serialize()
+	if err != nil {
+		r.Response.StatusCode = http.StatusInternalServerError
+		r.Response.Status = "Error while serializing new access grant"
+	}
 
 	//override encryption
 	saltedUserKey, err := uplink.DeriveEncryptionKey(request.Passphrase, request.SaltBytes)
@@ -83,11 +88,20 @@ func NewS3Customer(w http.ResponseWriter, r *http.Request) {
 	//register for S3
 	ctx := r.Context()
 	var edgeConfig = edge.Config{AuthServiceAddress: "auth.storjshare.io:7777"}
-	response, err := edgeConfig.RegisterAccess(ctx, derivedAccess, &edge.RegisterAccessOptions{Public: request.Public})
+	edgeCreds, err := edgeConfig.RegisterAccess(ctx, derivedAccess, &edge.RegisterAccessOptions{Public: request.Public})
 	if err != nil {
 		r.Response.StatusCode = http.StatusInternalServerError
 		r.Response.Status = "Error while registering access grant with Auth Service"
 	}
+
+	//note that the access grant that is returned does not have an updated encryption passphrase
+	//however, because it shares the same API key, revoking it will revoke the registered S3 grant
+	var response struct {
+		Edge            *edge.Credentials `json:"edge"`
+		RevocableAccess string            `json:"revocable"`
+	}
+	response.Edge = edgeCreds
+	response.RevocableAccess = serializedAccess
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(response)
