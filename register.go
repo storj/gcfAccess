@@ -24,8 +24,7 @@ func RegisterAccess(w http.ResponseWriter, r *http.Request) {
 	}
 	access, err := uplink.ParseAccess(request.AccessGrant)
 	if err != nil {
-		r.Response.StatusCode = http.StatusBadRequest
-		r.Response.Status = "Error while parsing access grant"
+		http.Error(w, "Error while parsing access grant", http.StatusBadRequest)
 		return
 	}
 
@@ -33,18 +32,9 @@ func RegisterAccess(w http.ResponseWriter, r *http.Request) {
 	var edgeConfig = edge.Config{AuthServiceAddress: "auth.storjshare.io:7777"}
 	response, err := edgeConfig.RegisterAccess(ctx, access, &edge.RegisterAccessOptions{Public: request.Public})
 	if err != nil {
-		r.Response.StatusCode = http.StatusInternalServerError
-		r.Response.Status = "Error while registering access grant with Auth Service"
+		http.Error(w, "Error while registering access grant with Auth Service", http.StatusInternalServerError)
+		return
 	}
-
-	// var response struct {
-	// 	AccessKeyID string `json:"AccessKeyID"`
-	// 	SecretKey   string `json:"SecretKey"`
-	// 	Endpoint    string `json:"Endpoint"`
-	// }
-	// response.AccessKeyID = s3.AccessKeyID
-	// response.SecretKey = s3.SecretKey
-	// response.Endpoint = s3.Endpoint
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(response)

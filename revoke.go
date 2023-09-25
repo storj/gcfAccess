@@ -24,14 +24,12 @@ func RevokeAccess(w http.ResponseWriter, r *http.Request) {
 	}
 	authAccess, err := uplink.ParseAccess(request.AuthGrant)
 	if err != nil {
-		r.Response.StatusCode = http.StatusBadRequest
-		r.Response.Status = "Error while parsing authorizing access grant"
+		http.Error(w, "Error while parsing authorizing access grant", http.StatusBadRequest)
 		return
 	}
 	accessToRevoke, err := uplink.ParseAccess(request.RevokeGrant)
 	if err != nil {
-		r.Response.StatusCode = http.StatusBadRequest
-		r.Response.Status = "Error while parsing access grant to be revoked"
+		http.Error(w, "Error while parsing access grant to be revoked", http.StatusBadRequest)
 		return
 	}
 
@@ -39,15 +37,13 @@ func RevokeAccess(w http.ResponseWriter, r *http.Request) {
 	config := &uplink.Config{UserAgent: "authservice"}
 	project, err := config.OpenProject(ctx, authAccess)
 	if err != nil {
-		r.Response.StatusCode = http.StatusInternalServerError
-		r.Response.Status = "Error while opening project"
+		http.Error(w, "Error while opening project", http.StatusInternalServerError)
 		return
 	}
 	defer func() { _ = project.Close() }()
 
 	if err := project.RevokeAccess(ctx, accessToRevoke); err != nil {
-		r.Response.StatusCode = http.StatusInternalServerError
-		r.Response.Status = "Error while revoking access grant"
+		http.Error(w, "Error while revoking access grant", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

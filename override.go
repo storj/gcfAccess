@@ -27,39 +27,33 @@ func OverrideEncryption(w http.ResponseWriter, r *http.Request) {
 	}
 	access, err := uplink.ParseAccess(request.AccessGrant)
 	if err != nil {
-		r.Response.StatusCode = http.StatusBadRequest
-		r.Response.Status = "Error while parsing access grant"
+		http.Error(w, "Error while parsing access grant", http.StatusBadRequest)
 		return
 	}
 	if len(request.Path.Bucket) == 0 || len(request.Path.Prefix) == 0 {
-		r.Response.StatusCode = http.StatusBadRequest
-		r.Response.Status = "Error: no or invalid path specified"
+		http.Error(w, "Error: no or invalid path specified", http.StatusBadRequest)
 		return
 	}
 	if len(request.Passphrase) == 0 {
-		r.Response.StatusCode = http.StatusBadRequest
-		r.Response.Status = "Error: no passphrase specified"
+		http.Error(w, "Error: no passphrase specified", http.StatusBadRequest)
 		return
 	}
 	if len(request.SaltBytes) == 0 {
 		request.SaltBytes = make([]byte, 32)
 		_, err = rand.Read(request.SaltBytes)
 		if err != nil {
-			r.Response.StatusCode = http.StatusInternalServerError
-			r.Response.Status = "Error generating salt bytes"
+			http.Error(w, "Error generating salt bytes", http.StatusInternalServerError)
 			return
 		}
 	}
 	saltedUserKey, err := uplink.DeriveEncryptionKey(request.Passphrase, request.SaltBytes)
 	if err != nil {
-		r.Response.StatusCode = http.StatusInternalServerError
-		r.Response.Status = "Error deriving salted encryption key"
+		http.Error(w, "Error deriving salted encryption key", http.StatusInternalServerError)
 		return
 	}
 	err = access.OverrideEncryptionKey(request.Path.Bucket, request.Path.Prefix, saltedUserKey)
 	if err != nil {
-		r.Response.StatusCode = http.StatusInternalServerError
-		r.Response.Status = "Error overriding encryption key"
+		http.Error(w, "Error overriding encryption key", http.StatusInternalServerError)
 		return
 	}
 	var response struct {
@@ -67,8 +61,8 @@ func OverrideEncryption(w http.ResponseWriter, r *http.Request) {
 	}
 	serializedAccess, err := access.Serialize()
 	if err != nil {
-		r.Response.StatusCode = http.StatusInternalServerError
-		r.Response.Status = "Error while serializing new access grant"
+		http.Error(w, "Error while serializing new access grant", http.StatusInternalServerError)
+		return
 	}
 	response.AccessGrant = serializedAccess
 	w.Header().Set("Content-Type", "application/json")

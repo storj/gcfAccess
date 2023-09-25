@@ -25,13 +25,11 @@ func RestrictAccess(w http.ResponseWriter, r *http.Request) {
 	}
 	originalAccess, err := uplink.ParseAccess(request.AccessGrant)
 	if err != nil {
-		r.Response.StatusCode = http.StatusBadRequest
-		r.Response.Status = "Error while parsing access grant"
+		http.Error(w, "Error while parsing access grant", http.StatusBadRequest)
 		return
 	}
 	if request.Permission == (uplink.Permission{}) {
-		r.Response.StatusCode = http.StatusUnprocessableEntity
-		r.Response.Status = "Error: no permissions specified"
+		http.Error(w, "Error: no permissions specified", http.StatusUnprocessableEntity)
 		return
 	}
 	// if we aren't actually restricting anything, then we don't need to Share.
@@ -41,23 +39,22 @@ func RestrictAccess(w http.ResponseWriter, r *http.Request) {
 		AllowDownload: true,
 		AllowUpload:   true,
 	}) && len(request.Paths) == 0 {
-		r.Response.StatusCode = http.StatusUnprocessableEntity
-		r.Response.Status = "Error: no restrictions specified"
+		http.Error(w, "Error: no restrictions specified", http.StatusUnprocessableEntity)
 		return
 	}
 	// note that Share() fail if permission is empty, but not paths
 	derivedAccess, err := originalAccess.Share(request.Permission, request.Paths...)
 	if err != nil {
-		r.Response.StatusCode = http.StatusInternalServerError
-		r.Response.Status = "Error while deriving restricted access grant"
+		http.Error(w, "Error while deriving restricted access grant", http.StatusInternalServerError)
+		return
 	}
 	var response struct {
 		AccessGrant string `json:"access_grant"`
 	}
 	serializedAccess, err := derivedAccess.Serialize()
 	if err != nil {
-		r.Response.StatusCode = http.StatusInternalServerError
-		r.Response.Status = "Error while serializing restricted access grant"
+		http.Error(w, "Error while serializing restricted access grant", http.StatusInternalServerError)
+		return
 	}
 	response.AccessGrant = serializedAccess
 	w.Header().Set("Content-Type", "application/json")

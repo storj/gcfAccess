@@ -43,8 +43,7 @@ func parseBodyJson(w http.ResponseWriter, r *http.Request, request any) bool {
 		if errors.As(err, &maxBytesError) {
 			status = http.StatusRequestEntityTooLarge
 		}
-		r.Response.StatusCode = status
-		r.Response.Status = "Error while parsing request JSON"
+		http.Error(w, "Error while parsing request JSON", status)
 		return true
 	}
 	return false
